@@ -1,1 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Hook Server - Admin Panel</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: white;
+            border-bottom: 3px solid #667eea;
+            color: #667eea;
+        }
+        
+        .tab-content { padding: 30px; display: none; }
+        .tab-content.active { display: block; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.3s;
+        }
+        
+        .btn:hover { transform: translateY(-2px); }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .table th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .status-active { color: #28a745; font-weight: bold; }
+        .status-inactive { color: #dc3545; font-weight: bold; }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-card h3 { font-size: 2em; margin-bottom: 10px; }
+        .refresh-btn { float: right; margin-bottom: 20px; }
 
+        .default-keys {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .default-keys h4 { color: #1976d2; margin-bottom: 10px; }
+        
+        .key-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .key-item {
+            background: #1976d2;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .generate-btn {
+            background: #28a745;
+            margin-left: 10px;
+        }
+
+        .generate-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 SMS Hook Server</h1>
+            <p>Admin Control Panel - Create & Manage Keys</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('dashboard')">Dashboard</button>
+            <button class="tab" onclick="showTab('keys')">Manage Keys</button>
+            <button class="tab" onclick="showTab('devices')">Devices</button>
+            <button class="tab" onclick="showTab('logs')">SMS Logs</button>
+        </div>
+        
+        <div id="dashboard" class="tab-content active">
+            <h2>📊 Dashboard</h2>
+            <div class="stats">
+                <div class="stat-card">
+                    <h3 id="totalKeys">0</h3>
+                    <p>Total Keys</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalDevices">0</h3>
+                    <p>Registered Devices</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalSMS">0</h3>
+                    <p>SMS Processed</p>
+                </div>
+            </div>
+
+            <div class="default-keys">
+                <h4>🔑 Available Keys:</h4>
+                <div class="key-list">
+                    <span class="key-item">DEMO_KEY_123</span>
+                    <span class="key-item">TEST_KEY_456</span>
+                    <span class="key-item">ADMIN_KEY_789</span>
+                    <span class="key-item">USER_KEY_001</span>
+                    <span class="key-item">FREE_KEY_999</span>
+                </div>
+                <p style="margin-top: 10px; color: #666;">Users can register with any of these keys</p>
+            </div>
+        </div>
+        
+        <div id="keys" class="tab-content">
+            <h2>🔑 Manage Keys</h2>
+            <button class="btn refresh-btn" onclick="loadKeys()">Refresh</button>
+            
+            <div class="form-group">
+                <label for="newKey">Create New Key:</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="newKey" placeholder="Enter custom key or click Generate">
+                    <button class="btn" onclick="addKey()">Add Key</button>
+                    <button class="btn generate-btn" onclick="generateRandomKey()">Generate Random</button>
+                </div>
+            </div>
+            
+            <table class="table">
+                <thead>
+                    <tr><th>ID</th><th>Key</th><th>Created</th><th>Status</th></tr>
+                </thead>
+                <tbody id="keysTable"></tbody>
+            </table>
+        </div>
+        
+        <div id="devices" class="tab-content">
+            <h2>📱 Registered Devices</h2>
+            <button class="btn refresh-btn" onclick="loadDevices()">Refresh</button>
+            
+            <table class="table">
+                <thead>
+                    <tr><th>Device ID</th><th>Key Used</th><th>Registered</th><th>Last Active</th><th>Status</th></tr>
+                </thead>
+                <tbody id="devicesTable"></tbody>
+            </table>
+        </div>
+        
+        <div id="logs" class="tab-content">
+            <h2>📨 SMS Logs</h2>
+            <button class="btn refresh-btn" onclick="loadLogs()">Refresh</button>
+            
+            <table class="table">
+                <thead>
+                    <tr><th>Device ID</th><th>Destination</th><th>Message</th><th>Timestamp</th><th>Status</th></tr>
+                </thead>
+                <tbody id="logsTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'dashboard') loadDashboard();
+            if (tabName === 'keys') loadKeys();
+            if (tabName === 'devices') loadDevices();
+            if (tabName === 'logs') loadLogs();
+        }
+        
+        async function loadDashboard() {
+            try {
+                const [keys, devices, logs] = await Promise.all([
+                    fetch('/admin/keys').then(r => r.json()),
+                    fetch('/admin/devices').then(r => r.json()),
+                    fetch('/admin/logs').then(r => r.json())
+                ]);
+                
+                document.getElementById('totalKeys').textContent = keys.length;
+                document.getElementById('totalDevices').textContent = devices.length;
+                document.getElementById('totalSMS').textContent = logs.length;
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+        
+        async function loadKeys() {
+            try {
+                const response = await fetch('/admin/keys');
+                const keys = await response.json();
+                
+                document.getElementById('keysTable').innerHTML = keys.map(key => `
+                    <tr>
+                        <td>${key.id}</td>
+                        <td><code>${key.key_value}</code></td>
+                        <td>${new Date(key.created_at).toLocaleString()}</td>
+                        <td class="${key.is_active ? 'status-active' : 'status-inactive'}">
+                            ${key.is_active ? 'Active' : 'Inactive'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading keys:', error);
+            }
+        }
+        
+        function generateRandomKey() {
+            const randomKey = 'KEY_' + Math.random().toString(36).substring(2, 15).toUpperCase();
+            document.getElementById('newKey').value = randomKey;
+        }
+        
+        async function addKey() {
+            const keyInput = document.getElementById('newKey');
+            const key = keyInput.value.trim();
+            
+            if (!key) {
+                alert('Please enter a key or generate one');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/admin/keys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key })
+                });
+                
+                if (response.ok) {
+                    keyInput.value = '';
+                    loadKeys();
+                    loadDashboard(); // Refresh stats
+                    alert('Key added successfully! Users can now register with: ' + key);
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error adding key:', error);
+                alert('Error adding key');
+            }
+        }
+        
+        async function loadDevices() {
+            try {
+                const response = await fetch('/admin/devices');
+                const devices = await response.json();
+                
+                document.getElementById('devicesTable').innerHTML = devices.map(device => `
+                    <tr>
+                        <td><code>${device.device_id}</code></td>
+                        <td><code>${device.key_used}</code></td>
+                        <td>${new Date(device.registered_at).toLocaleString()}</td>
+                        <td>${new Date(device.last_active).toLocaleString()}</td>
+                        <td class="${device.is_active ? 'status-active' : 'status-inactive'}">
+                            ${device.is_active ? 'Active' : 'Inactive'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading devices:', error);
+            }
+        }
+        
+        async function loadLogs() {
+            try {
+                const response = await fetch('/admin/logs');
+                const logs = await response.json();
+                
+                document.getElementById('logsTable').innerHTML = logs.map(log => `
+                    <tr>
+                        <td><code>${log.device_id}</code></td>
+                        <td>${log.dest_number}</td>
+                        <td>${log.message.substring(0, 50)}${log.message.length > 50 ? '...' : ''}</td>
+                        <td>${new Date(log.timestamp).toLocaleString()}</td>
+                        <td class="${log.status === 'success' ? 'status-active' : 'status-inactive'}">
+                            ${log.status}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading logs:', error);
+            }
+        }
+        
+        // Load dashboard on page load
+        loadDashboard();
+    </script>
+</body>
+</html>
